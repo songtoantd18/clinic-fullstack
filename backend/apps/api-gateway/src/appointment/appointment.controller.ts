@@ -27,10 +27,16 @@ export class AppointmentController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create new appointment' })
-  async create(@Body() createAppointmentDto: CreateAppointmentDto, @Req() req) {
+  @ApiQuery({ name: 'submit', required: false, type: Boolean, description: 'Set to true to submit immediately, false/omit for draft' })
+  async create(
+    @Body() createAppointmentDto: CreateAppointmentDto,
+    @Query('submit') submit?: boolean,
+    @Req() req?,
+  ) {
     // req.user.id is the patient's user ID (from JWT token)
     const patientUserId = req.user.id;
-    return this.appointmentService.create(createAppointmentDto, patientUserId);
+    const isDraft = submit !== true; // Default is draft unless submit=true
+    return this.appointmentService.create(createAppointmentDto, patientUserId, isDraft);
   }
 
   @Get()
@@ -89,6 +95,15 @@ export class AppointmentController {
   ) {
     return this.appointmentService.update(id, updateAppointmentDto);
   }
+
+  @Put(':id/submit')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Submit draft appointment' })
+  async submitDraft(@Param('id') id: string, @Req() req) {
+    return this.appointmentService.submitDraft(id, req.user.id);
+  }
+
 
   @Put(':id/prescription')
   @UseGuards(AuthGuard('jwt'))

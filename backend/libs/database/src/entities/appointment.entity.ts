@@ -10,6 +10,7 @@ import {
 import { User } from './user.entity';
 
 export enum AppointmentStatus {
+  DRAFT = 'draft',
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
   COMPLETED = 'completed',
@@ -20,6 +21,9 @@ export enum AppointmentStatus {
 export class Appointment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ unique: true, name: 'appointment_code' })
+  appointmentCode: string;
 
   @Column({ name: 'clinic_user_id' })
   clinicUserId: string;
@@ -61,7 +65,7 @@ export class Appointment {
   @Column({
     type: 'enum',
     enum: AppointmentStatus,
-    default: AppointmentStatus.PENDING,
+    default: AppointmentStatus.DRAFT,
   })
   status: AppointmentStatus;
 

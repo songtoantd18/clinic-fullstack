@@ -1,11 +1,11 @@
-import { IsString, IsOptional, IsArray, IsObject } from 'class-validator';
+import { IsOptional, IsString, IsArray, IsDateString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateClinicDto {
+export class UpdateClinicProfileDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  name?: string;
+  clinicName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -29,12 +29,22 @@ export class UpdateClinicDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  workingHours?: {
+    [key: string]: { start: string; end: string; isOpen: boolean };
+  };
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  images?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
   doctorInfo?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsObject()
   notificationSettings?: {
     emailEnabled: boolean;
     smsEnabled: boolean;

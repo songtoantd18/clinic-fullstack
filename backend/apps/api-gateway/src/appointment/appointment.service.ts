@@ -19,22 +19,44 @@ export class AppointmentService {
     private userRepository: Repository<User>,
   ) {}
 
-  async create(createAppointmentDto: CreateAppointmentDto, patientUserId: string) {
-    // Check if time slot is available
-    const isAvailable = await this.checkTimeSlotAvailability(
-      createAppointmentDto.clinicUserId,
-      new Date(createAppointmentDto.appointmentTime),
-    );
+  async create(
+    createAppointmentDto: CreateAppointmentDto,
+    patientUserId: string,
+    isDraft = true, // Default to draft
+  ) {
+    // Generate appointment code
+    const appointments = await this.appointmentRepository.find({
+      order: { createdAt: 'DESC' },
+      take: 1,
+    });
 
-    if (!isAvailable) {
-      throw new BadRequestException('Time slot is not available');
+    let nextNumber = 1;
+    if (appointments.length > 0 && appointments[0].appointmentCode) {
+      // Extract number from "APT-0001" format
+      const lastNumber = parseInt(appointments[0].appointmentCode.split('-')[1]);
+      nextNumber = lastNumber + 1;
     }
+
+    const appointmentCode = `APT-${nextNumber.toString().padStart(4, '0')}`;
 
     const appointment = this.appointmentRepository.create({
       ...createAppointmentDto,
       patientUserId,
-      status: AppointmentStatus.PENDING,
+      appointmentCode,
+      status: isDraft ? AppointmentStatus.DRAFT : AppointmentStatus.PENDING,
     });
+
+    // Only check availability if not draft
+    if (!isDraft) {
+      const isAvailable = await this.checkTimeSlotAvailability(
+        createAppointmentDto.clinicUserId,
+        new Date(createAppointmentDto.appointmentTime),
+      );
+
+      if (!isAvailable) {
+        throw new BadRequestException('Time slot is not available');
+      }
+    }
 
     return await this.appointmentRepository.save(appointment);
   }
@@ -108,6 +130,35 @@ export class AppointmentService {
     appointment.status = AppointmentStatus.CANCELLED;
     return await this.appointmentRepository.save(appointment);
   }
+
+  async submitDraft(id: string, userId: string) {
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id, patientUserId: userId },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.status !== AppointmentStatus.DRAFT) {
+      throw new BadRequestException('Only draft appointments can be submitted');
+    }
+
+    // Check availability
+    const isAvailable = await this.checkTimeSlotAvailability(
+      appointment.clinicUserId,
+      appointment.appointmentTime,
+      id,
+    );
+
+    if (!isAvailable) {
+      throw new BadRequestException('Time slot is not available');
+    }
+
+    appointment.status = AppointmentStatus.PENDING;
+    return await this.appointmentRepository.save(appointment);
+  }
+
 
   async getAvailableSlots(clinicUserId: string, date: Date) {
     const clinic = await this.userRepository.findOne({
