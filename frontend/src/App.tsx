@@ -9,7 +9,14 @@ import ClinicPage from './pages/clinic/DashboardPage'
 
 // Protected Route Component
 const ProtectedRoute = ({ element, allowedRole }: { element: React.ReactNode; allowedRole: 'clinic' | 'patient' }) => {
-  const { isAuthenticated, role } = useAuth()
+  const { isAuthenticated, role, isLoading } = useAuth()
+
+  // Đợi load xong từ localStorage trước khi redirect
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-lg">Loading...</div>
+    </div>
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />

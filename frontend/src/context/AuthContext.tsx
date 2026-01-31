@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (data: any) => void
   logout: () => void
   isAuthenticated: boolean
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<UserRole>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -38,6 +40,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('access_token')
       }
     }
+
+    // Đánh dấu đã load xong
+    setIsLoading(false)
   }, [])
 
   const login = (userData: any) => {
@@ -69,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     isAuthenticated: !!user,
+    isLoading,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

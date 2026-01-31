@@ -5,9 +5,16 @@ const client = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+
+  /**
+   * 👉 CỰC KỲ QUAN TRỌNG
+   * Cho phép mọi status code đều resolve
+   * => backend trả gì FE nhận y nguyên
+   */
+  validateStatus: () => true,
 });
 
-// Add a request interceptor
+// Request interceptor
 client.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
@@ -16,19 +23,13 @@ client.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error),
 );
 
-// Add a response interceptor
+// Response interceptor (KHÔNG xử lý gì)
 client.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (response) => response,
+  (error) => Promise.reject(error), // chỉ throw network error
 );
 
 export default client;

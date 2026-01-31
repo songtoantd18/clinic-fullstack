@@ -11,10 +11,10 @@ import { AppointmentModule } from './appointment/appointment.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    DatabaseModule,
-    AuthModule,
-    UserModule,
-    AppointmentModule,
+  DatabaseModule,             // Kết nối database (TypeORM)
+    AuthModule,                 // Module xử lý authentication ⭐
+    UserModule,                 // Module quản lý user
+    AppointmentModule,          // Module quản lý appointment
   ],
 })
 export class AppModule {}

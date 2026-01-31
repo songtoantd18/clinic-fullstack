@@ -6,14 +6,13 @@ import { appointmentService, Appointment } from '../../services/appointment.serv
 export default function AppointmentsPage() {
   const { user, role, logout } = useAuth()
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  console.log("🔍 ~ AppointmentsPage ~ frontend/src/pages/patient/AppointmentsPage.tsx:9 ~ co:", appointments);
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchAppointments = async () => {
       if (user?.id && role) {
         try {
-          // Use user.id as the ID for fetching. 
-          // Note: If user.role is 'patient', this works if we implemented the logic in service/backend correctly.
           const data = await appointmentService.getMyAppointments(role, user.id)
           setAppointments(data)
         } catch (error) {
@@ -26,6 +25,16 @@ export default function AppointmentsPage() {
 
     fetchAppointments()
   }, [user, role])
+
+  const getStatusDisplay = (status: string) => {
+    const statusMap: Record<string, { bg: string; text: string; label: string }> = {
+      draft: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
+      confirmed: { bg: 'bg-green-100', text: 'text-green-800', label: 'Confirmed' },
+      completed: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Completed' },
+      cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelled' }
+    }
+    return statusMap[status.toLowerCase()] || statusMap.draft
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -55,7 +64,7 @@ export default function AppointmentsPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">My Appointments</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">My Appointments111</h1>
 
           {loading ? (
             <div className="text-center py-8">Loading appointments...</div>
@@ -67,40 +76,44 @@ export default function AppointmentsPage() {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Clinic</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Date</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Time</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Symptoms</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
                 </thead>
+                {/* <pre>{JSON.stringify(appointments, null, 2)}</pre> */}
+
                 <tbody>
-                  {appointments.map((apt) => (
-                    <tr key={apt.id} className="border-t">
-                      <td className="px-6 py-3 text-sm text-gray-900">{apt.clinic?.name || 'Unknown Clinic'}</td>
-                      <td className="px-6 py-3 text-sm text-gray-900">
-                        {new Date(apt.appointmentDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-900">
-                        {new Date(apt.appointmentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="px-6 py-3 text-sm">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${apt.status === 'CONFIRMED'
-                              ? 'bg-green-100 text-green-800'
-                              : apt.status === 'COMPLETED'
-                                ? 'bg-blue-100 text-blue-800'
-                                : apt.status === 'CANCELLED'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                            }`}
-                        >
-                          {apt.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-sm">
-                        <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                        <button className="text-red-600 hover:text-red-900">Cancel</button>
-                      </td>
-                    </tr>
-                  ))}
+                  {appointments.map((apt) => {
+                    const appointmentDate = new Date(apt.appointmentTime)
+                    const statusInfo = getStatusDisplay(apt.status)
+
+                    return (
+                      <tr key={apt.id} className="border-t">
+                        <td className="px-6 py-3 text-sm text-gray-900">
+                          {apt.clinicUser?.clinicName || 'Unknown Clinic'}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-900">
+                          {appointmentDate.toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-900">
+                          {appointmentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-900">
+                          {apt.symptoms || 'N/A'}
+                        </td>
+                        <td className="px-6 py-3 text-sm">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.bg} ${statusInfo.text}`}>
+                            {statusInfo.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-sm">
+                          <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
+                          <button className="text-red-600 hover:text-red-900">Cancel</button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

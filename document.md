@@ -93,3 +93,6 @@ Story:
 - Gợi ý phòng khám dựa trên địa chỉ bệnh nhân
 - chat trực tiếp giữa phòng khám và bệnh nhân trên web
 - chức năng gửi tin nhắn nhắc nhở tới lịch khám trên điện thoại
+
+
+note:hỏi gpt thử cái nào là function trong frotnend làm trước còn cái nào nâng cao thì từ từ làm để sau 

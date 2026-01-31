@@ -1,24 +1,22 @@
-import client from './client'
-
-export const baseurl = () => {
-  return 'http://localhost:3000/'
-}
+import client from './client';
 
 export const request = async (
   url: string,
   data: any = {},
   method: 'get' | 'post' | 'put' | 'delete' = 'post'
 ) => {
-  try {
-    if (method === 'get') {
-      const response = await client.get(url, { params: data })
-      return response.data
-    }
+  let response;
 
-    const response = await client[method](url, data)
-    return response.data
-  } catch (error) {
-    console.error('API error:', error)
-    throw error // để component tự handle
+  if (method === 'get') {
+    response = await client.get(url, { params: data });
+  } else {
+    response = await client[method](url, data);
   }
-}
+
+  /**
+   * 👉 response.data = backend response (100%)
+   * Không throw
+   * Không bọc
+   */
+  return response.data;
+};

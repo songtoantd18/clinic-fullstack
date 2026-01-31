@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { request } from '../api/api'
@@ -10,8 +10,23 @@ export default function LoginPage() {
   // Role is now determined by backend response
   // const [role, setRole] = useState<'clinic' | 'patient'>('patient')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, isAuthenticated, role, isLoading } = useAuth()
   const navigate = useNavigate()
+
+  // Redirect if already logged in
+  useEffect(() => {
+
+    console.log("🔍 ~ LoginPage ~ frontend/src/pages/LoginPage.tsx:17 ~ useEffect ~ isLoading:", isLoading)
+    console.log("🔍 ~ LoginPage ~ frontend/src/pages/LoginPage.tsx:17 ~ useEffect ~ isAuthenticated:", isAuthenticated)
+    console.log("🔍 ~ LoginPage ~ frontend/src/pages/LoginPage.tsx:17 ~ useEffect ~ role:", role)
+    if (!isLoading && isAuthenticated && role) {
+      if (role === 'clinic') {
+        navigate('/clinic/dashboard')
+      } else {
+        navigate('/patient/dashboard')
+      }
+    }
+  }, [isLoading, isAuthenticated, role, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,10 +43,19 @@ export default function LoginPage() {
       )
       console.log("🔍 ~ LoginPage ~ frontend/src/pages/LoginPage.tsx:21 ~ response:", response);
 
+      // 👉 Kiểm tra nếu response có lỗi (statusCode !== undefined)
+      if (response.statusCode) {
+        // Response lỗi: { message, error, statusCode }
+        alert(response.message || 'Login failed. Please try again.')
+        return
+      }
+
+      // 👉 Response thành công: { access_token, user }
       const { access_token, user } = response
 
-      // lưu token
+      // lưu token và user vào localStorage để duy trì đăng nhập
       localStorage.setItem('access_token', access_token)
+      localStorage.setItem('user', JSON.stringify(user))
 
       // lưu user vào auth context
       login(user)
@@ -43,11 +67,9 @@ export default function LoginPage() {
         navigate('/patient/dashboard')
       }
     } catch (error: any) {
-      console.error('Login failed:', error)
-      alert(
-        error?.response?.data?.message ||
-        'Login failed. Please try again.'
-      )
+      // 👉 Chỉ catch network errors (không có response từ server)
+      console.error('Network error:', error)
+      alert('Network error. Please check your connection.')
     } finally {
       setLoading(false)
     }

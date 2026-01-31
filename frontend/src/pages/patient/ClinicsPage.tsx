@@ -3,11 +3,63 @@ import { useAuth } from '../../context/AuthContext'
 import { useEffect, useState } from 'react'
 import { clinicService, Clinic } from '../../services/clinic.service'
 
+import { appointmentService } from '../../services/appointment.service'
+
 export default function ClinicsPage() {
   const { user, logout } = useAuth()
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null)
+  const [reason, setReason] = useState('')
+  const [appointmentDate, setAppointmentDate] = useState('')
+  const [appointmentTime, setAppointmentTime] = useState('09:00') // Default time
+  const [bookingLoading, setBookingLoading] = useState(false)
+
+  const openBookingModal = (clinic: Clinic) => {
+    setSelectedClinic(clinic)
+    setReason('')
+    // Default to tomorrow
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    setAppointmentDate(tomorrow.toISOString().split('T')[0])
+    setAppointmentTime('09:00')
+  }
+
+  const closeBookingModal = () => {
+    setSelectedClinic(null)
+    setReason('')
+    setAppointmentDate('')
+    setAppointmentTime('')
+  }
+
+  const handleConfirmAppointment = async () => {
+    if (!selectedClinic || !appointmentDate || !appointmentTime || !reason) {
+      alert('Please fill in all fields')
+      return
+    }
+
+    try {
+      setBookingLoading(true)
+      // Combine date and time
+      const dateTimeString = `${appointmentDate}T${appointmentTime}:00`
+      const fullDate = new Date(dateTimeString)
+
+      await appointmentService.createAppointment({
+        clinicUserId: selectedClinic.id,
+        appointmentTime: fullDate.toISOString(),
+        symptoms: reason,
+      })
+      alert('Appointment created successfully!')
+      closeBookingModal()
+    } catch (err: any) {
+      console.error('Booking failed:', err)
+      alert(err.response?.data?.message || 'Failed to book appointment')
+    } finally {
+      setBookingLoading(false)
+    }
+  }
 
   useEffect(() => {
     const fetchClinics = async () => {
@@ -53,7 +105,7 @@ export default function ClinicsPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Browse Clinics</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Browse Clinics111</h1>
 
           {loading ? (
             <div className="text-center py-8">Loading clinics...</div>
@@ -68,27 +120,40 @@ export default function ClinicsPage() {
                   {clinic.images && clinic.images.length > 0 && (
                     <img
                       src={`http://localhost:3000${clinic.images[0]}`}
-                      alt={clinic.name}
+                      alt={clinic.clinicName || 'Clinic'}
                       className="w-full h-48 object-cover rounded-md mb-4"
                     />
                   )}
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{clinic.name}</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {clinic.clinicName || clinic.fullName || 'Unnamed Clinic'}
+                  </h3>
                   <p className="text-gray-600 mb-2">
-                    <span className="font-medium">Specialty:</span> {clinic.specialty}
+                    <span className="font-medium">Email:</span> {clinic.email}
                   </p>
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-medium">Address:</span> {clinic.address}
-                  </p>
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-medium">Phone:</span> {clinic.phoneNumber}
-                  </p>
-                  {/* Working hours display could be complex, simplifying for now */}
+                  {clinic.specialties && clinic.specialties.length > 0 && (
+                    <p className="text-gray-600 mb-2">
+                      <span className="font-medium">Specialties:</span> {clinic.specialties.join(', ')}
+                    </p>
+                  )}
+                  {clinic.address && (
+                    <p className="text-gray-600 mb-2">
+                      <span className="font-medium">Address:</span> {clinic.address}
+                    </p>
+                  )}
+                  {clinic.phone && (
+                    <p className="text-gray-600 mb-2">
+                      <span className="font-medium">Phone:</span> {clinic.phone}
+                    </p>
+                  )}
+                  {clinic.description && (
+                    <p className="text-gray-600 mb-2 text-sm italic">{clinic.description}</p>
+                  )}
                   <div className="flex items-center mb-4">
-                    {/* Rating is not in the basic clinic entity yet, removing or adding placeholder */}
-                    {/* <span className="text-yellow-400">★</span>
-                    <span className="ml-1 text-gray-900 font-medium">{clinic.rating}</span> */}
+                    <span className={`text-xs px-2 py-1 rounded ${clinic.profileCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      {clinic.profileCompleted ? 'Profile Complete' : 'Profile Incomplete'}
+                    </span>
                   </div>
-                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                  <button onClick={() => openBookingModal(clinic)} className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     Book Appointment
                   </button>
                 </div>
@@ -96,7 +161,68 @@ export default function ClinicsPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </main >
+
+      {/* Booking Modal */}
+      {selectedClinic && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg shadow-xl w-96">
+            <h3 className="text-lg font-bold mb-4">Book Appointment</h3>
+            <p className="text-gray-600 mb-4">Clinic: {selectedClinic.clinicName || selectedClinic.fullName}</p>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Date & Time
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  value={appointmentDate}
+                  onChange={(e) => setAppointmentDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                <input
+                  type="time"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  value={appointmentTime}
+                  onChange={(e) => setAppointmentTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Symptoms / Reason
+              </label>
+              <textarea
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                rows={4}
+                placeholder="Describe your symptoms (e.g. Headache, fever...)"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={closeBookingModal}
+                disabled={bookingLoading}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAppointment}
+                disabled={bookingLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {bookingLoading ? 'Booking...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div >
   )
 }
