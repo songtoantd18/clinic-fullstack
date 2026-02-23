@@ -19,12 +19,6 @@ export default function ClinicsPage() {
 
   const openBookingModal = (clinic: Clinic) => {
     setSelectedClinic(clinic)
-    setReason('')
-    // Default to tomorrow
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    setAppointmentDate(tomorrow.toISOString().split('T')[0])
-    setAppointmentTime('09:00')
   }
 
   const closeBookingModal = () => {
@@ -89,6 +83,9 @@ export default function ClinicsPage() {
             <div className="flex items-center gap-4">
               <Link to="/patient/appointments" className="text-gray-600 hover:text-gray-900">
                 My Appointments
+              </Link>
+              <Link to="/patient/profile" className="text-gray-600 hover:text-gray-900">
+                Profile
               </Link>
               <span className="text-gray-600">{user?.email}</span>
               <button

@@ -8,33 +8,62 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   console.log("🔍 ~ AppointmentsPage ~ frontend/src/pages/patient/AppointmentsPage.tsx:9 ~ co:", appointments);
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (user?.id && role) {
-        try {
-          const data = await appointmentService.getMyAppointments(role, user.id)
-          setAppointments(data)
-        } catch (error) {
-          console.error('Failed to fetch appointments:', error)
-        } finally {
-          setLoading(false)
-        }
+  const fetchAppointments = async () => {
+    if (user?.id && role) {
+      try {
+        setLoading(true)
+        const data = await appointmentService.getMyAppointments(role, user.id)
+        setAppointments(data)
+      } catch (error) {
+        console.error('Failed to fetch appointments:', error)
+      } finally {
+        setLoading(false)
       }
     }
+  }
 
+  useEffect(() => {
     fetchAppointments()
   }, [user, role])
 
   const getStatusDisplay = (status: string) => {
     const statusMap: Record<string, { bg: string; text: string; label: string }> = {
       draft: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
       confirmed: { bg: 'bg-green-100', text: 'text-green-800', label: 'Confirmed' },
       completed: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Completed' },
       cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelled' }
     }
     return statusMap[status.toLowerCase()] || statusMap.draft
   }
+
+  const handleCancel = async (appointmentId: string) => {
+    if (!confirm('Are you sure you want to cancel this appointment?')) {
+      return
+    }
+
+    try {
+      setActionLoading(appointmentId)
+      await appointmentService.cancelAppointment(appointmentId)
+      alert('Appointment cancelled successfully!')
+      // Refresh appointments list
+      await fetchAppointments()
+    } catch (error: any) {
+      console.error('Failed to cancel appointment:', error)
+      alert(error.response?.data?.message || 'Failed to cancel appointment')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleEdit = (appointmentId: string) => {
+    // For now, just navigate to detail page or show edit modal
+    // You can implement edit modal later
+    alert(`Edit functionality for appointment ${appointmentId} - Coming soon!`)
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,6 +77,9 @@ export default function AppointmentsPage() {
             <div className="flex items-center gap-4">
               <Link to="/patient/clinics" className="text-gray-600 hover:text-gray-900">
                 Browse Clinics
+              </Link>
+              <Link to="/patient/profile" className="text-gray-600 hover:text-gray-900">
+                Profile
               </Link>
               <span className="text-gray-600">{user?.email}</span>
               <button
@@ -108,8 +140,27 @@ export default function AppointmentsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-3 text-sm">
-                          <button className="text-blue-600 hover:text-blue-900 mr-2">Edit</button>
-                          <button className="text-red-600 hover:text-red-900">Cancel</button>
+                          {apt.status !== 'cancelled' && apt.status !== 'completed' && (
+                            <>
+                              <button
+                                onClick={() => handleEdit(apt.id)}
+                                disabled={actionLoading === apt.id}
+                                className="text-blue-600 hover:text-blue-900 mr-2 disabled:opacity-50"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleCancel(apt.id)}
+                                disabled={actionLoading === apt.id}
+                                className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                              >
+                                {actionLoading === apt.id ? 'Cancelling...' : 'Cancel'}
+                              </button>
+                            </>
+                          )}
+                          {(apt.status === 'cancelled' || apt.status === 'completed') && (
+                            <span className="text-gray-400">No actions</span>
+                          )}
                         </td>
                       </tr>
                     )

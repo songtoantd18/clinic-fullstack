@@ -3,9 +3,10 @@ import { useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import ClinicDashboard from './pages/clinic/DashboardPage'
+import ClinicAppointments from './pages/clinic/ClinicAppointmentsPage'
 import PatientAppointments from './pages/patient/AppointmentsPage'
 import PatientClinics from './pages/patient/ClinicsPage'
-import ClinicPage from './pages/clinic/DashboardPage'
+import PatientProfile from './pages/patient/PatientProfilePage'
 
 // Protected Route Component
 const ProtectedRoute = ({ element, allowedRole }: { element: React.ReactNode; allowedRole: 'clinic' | 'patient' }) => {
@@ -44,6 +45,10 @@ function App() {
           path="/clinic/dashboard"
           element={<ProtectedRoute element={<ClinicDashboard />} allowedRole="clinic" />}
         />
+        <Route
+          path="/clinic/appointments"
+          element={<ProtectedRoute element={<ClinicAppointments />} allowedRole="clinic" />}
+        />
 
         {/* Patient Routes */}
         <Route
@@ -57,6 +62,10 @@ function App() {
         <Route
           path="/patient/appointments"
           element={<ProtectedRoute element={<PatientAppointments />} allowedRole="patient" />}
+        />
+        <Route
+          path="/patient/profile"
+          element={<ProtectedRoute element={<PatientProfile />} allowedRole="patient" />}
         />
 
         {/* Redirect based on role when accessing root after login */}

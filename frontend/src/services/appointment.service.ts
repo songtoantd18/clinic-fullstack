@@ -54,4 +54,46 @@ export const appointmentService = {
     )
     return response.data
   },
+
+  // Get appointment by ID
+  getAppointmentById: async (id: string): Promise<Appointment> => {
+    const response = await client.get(`/appointments/${id}`)
+    return response.data
+  },
+
+  // Update appointment
+  updateAppointment: async (id: string, data: Partial<CreateAppointmentDto>): Promise<Appointment> => {
+    const response = await client.put(`/appointments/${id}`, data)
+    return response.data
+  },
+
+  // Submit draft appointment
+  submitDraft: async (id: string): Promise<Appointment> => {
+    const response = await client.put(`/appointments/${id}/submit`)
+    return response.data
+  },
+
+  // Cancel appointment
+  cancelAppointment: async (id: string): Promise<Appointment> => {
+    const response = await client.delete(`/appointments/${id}`)
+    return response.data
+  },
+
+  // Update prescription
+  updatePrescription: async (id: string, data: {
+    diagnosis?: string
+    prescription?: {
+      medications: Array<{
+        name: string
+        dosage: string
+        frequency: string
+        duration: string
+      }>
+      notes: string
+    }
+    testResults?: string
+  }): Promise<Appointment> => {
+    const response = await client.put(`/appointments/${id}/prescription`, data)
+    return response.data
+  },
 }
