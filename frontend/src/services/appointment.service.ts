@@ -35,7 +35,7 @@ export const appointmentService = {
 
   // Get my appointments (filtered by role and userId)
   getMyAppointments: async (role: 'clinic' | 'patient', userId: string): Promise<Appointment[]> => {
-    const params = role === 'patient' ? { patientId: userId } : { clinicId: userId }
+    const params = role === 'patient' ? { patientUserId: userId } : { clinicUserId: userId }
     const response = await client.get('/appointments', { params })
     return response.data
   },

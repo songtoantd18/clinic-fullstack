@@ -16,7 +16,7 @@ import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
-import { AppointmentStatus } from '@app/database';
+import { AppointmentStatus, UserRole } from '@app/database';
 
 @ApiTags('Appointments')
 @Controller('appointments')
@@ -43,18 +43,28 @@ export class AppointmentController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get appointments with filters' })
-  @ApiQuery({ name: 'clinicId', required: false })
-  @ApiQuery({ name: 'patientId', required: false })
+  @ApiQuery({ name: 'clinicUserId', required: false })
+  @ApiQuery({ name: 'patientUserId', required: false })
   @ApiQuery({ name: 'startDate', required: false })
   @ApiQuery({ name: 'endDate', required: false })
   @ApiQuery({ name: 'status', required: false, enum: AppointmentStatus })
   async findAll(
+    @Req() req,
     @Query('clinicUserId') clinicUserId?: string,
     @Query('patientUserId') patientUserId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('status') status?: AppointmentStatus,
   ) {
+    const user = req.user;
+
+    // Enforce data isolation based on role
+    if (user.role === UserRole.CLINIC) {
+      clinicUserId = user.id;
+    } else if (user.role === UserRole.PATIENT) {
+      patientUserId = user.id;
+    }
+
     return this.appointmentService.findAll({
       clinicUserId,
       patientUserId,
