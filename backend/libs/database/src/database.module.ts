@@ -18,7 +18,7 @@ import { Appointment } from './entities/appointment.entity';
         database: configService.get('DB_DATABASE'),
         entities: [User, Appointment],
         synchronize: configService.get('NODE_ENV') === 'development',
-        logging: configService.get('NODE_ENV') === 'development',
+        logging: false, // Tắt log query SQL để console sạch hơn
         // SSL configuration for Aiven Cloud
         ssl: configService.get('DB_SSL') === 'true' ? {
           rejectUnauthorized: false,

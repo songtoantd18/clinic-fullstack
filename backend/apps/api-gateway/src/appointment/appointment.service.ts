@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -12,6 +13,7 @@ import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
 
 @Injectable()
 export class AppointmentService {
+  private readonly logger = new Logger('Lifecycle');
   constructor(
     @InjectRepository(Appointment)
     private appointmentRepository: Repository<Appointment>,
@@ -24,6 +26,7 @@ export class AppointmentService {
     patientUserId: string,
     isDraft = true, // Default to draft
   ) {
+    this.logger.log('5.1 [Service] Service thực hiện thao tác với Database');
     // Generate appointment code
     const appointments = await this.appointmentRepository.find({
       order: { createdAt: 'DESC' },

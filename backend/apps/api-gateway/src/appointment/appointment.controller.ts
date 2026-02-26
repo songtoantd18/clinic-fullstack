@@ -8,7 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
   Req,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -17,22 +19,28 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
 import { AppointmentStatus, UserRole } from '@app/database';
+import { LifecycleGuard } from '../common/lifecycle/lifecycle.guard';
+import { LifecycleInterceptor } from '../common/lifecycle/lifecycle.interceptor';
+import { LifecyclePipe } from '../common/lifecycle/lifecycle.pipe';
 
 @ApiTags('Appointments')
 @Controller('appointments')
 export class AppointmentController {
+  private readonly logger = new Logger('Lifecycle');
   constructor(private appointmentService: AppointmentService) {}
 
   @Post()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), LifecycleGuard)
+  @UseInterceptors(LifecycleInterceptor)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create new appointment' })
   @ApiQuery({ name: 'submit', required: false, type: Boolean, description: 'Set to true to submit immediately, false/omit for draft' })
   async create(
-    @Body() createAppointmentDto: CreateAppointmentDto,
+    @Body(LifecyclePipe) createAppointmentDto: CreateAppointmentDto,
     @Query('submit') submit?: boolean,
     @Req() req?,
   ) {
+    this.logger.log('5. [Controller] Controller xử lý business logic');
     // req.user.id is the patient's user ID (from JWT token)
     const patientUserId = req.user.id;
     const isDraft = submit !== true; // Default is draft unless submit=true
